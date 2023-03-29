@@ -1,0 +1,411 @@
+---
+title: "Week4 New"
+author: "Matthew Lam"
+date: "2023-02-02"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load Data
+```{r}
+library(tidyverse)
+calvaxraw <- read.csv("covid19vaccinesbycounty.csv")
+
+
+calpop <- read.csv("covid19cases_test.csv")
+calpop <- calpop %>% group_by(area, population) %>% select(area, population)
+calpop <- unique(calpop)
+```
+
+## Calculatiuons
+```{r}
+# cal_vax <- left_join(calvaxraw, calpop, by=c("county", "area"))
+# 
+# cal_vax$per_pop_fully_vax <-round( (cal_vax$cumulative_fully_vaccinated/cal_vax$population)*100, digits=1)
+```
+
+##getting month
+```{r}
+cal_vax <- calvaxraw
+#format date
+
+cal_vax <- cal_vax %>% filter(administered_date=="01/01/2021"| administered_date=="01/02/2021"| administered_date=="01/03/2021"| administered_date=="01/04/2021"| administered_date=="01/05/2021"| administered_date=="01/06/2021"| administered_date=="01/07/2021"| administered_date=="01/08/2021"| administered_date=="01/09/2021"| administered_date=="01/10/2021"| administered_date=="01/11/2021"| administered_date=="01/12/2021") %>% filter(county!="Unknown", county!="Outside California", county!="All CA Counties", county!="All CA and Non-CA Counties") %>% group_by(county, administered_date) %>% select(county, administered_date, cumulative_fully_vaccinated)
+
+
+
+cal_vax<-merge(cal_vax, calpop, by.x="county", by.y="area")
+
+
+cal_vax$per_pop_vax <- round(((cal_vax$cumulative_fully_vaccinated/cal_vax$population)*100), digits=1)
+
+cal_vax %>% filter(county=="Alameda")
+
+
+#now convert to wide
+cal_vax <- cal_vax %>% select(county, administered_date, per_pop_vax)%>% spread(administered_date, per_pop_vax)
+
+
+write.csv(cal_vax, "cal_vax.csv")
+```
+
+
+
+## mapping vax
+```{r}
+library(sp)
+library(tidyverse)
+library(sf)
+library(rgeos)
+library(rgdal)
+library(tmap)
+
+calcountiesshape <- st_read("CA_Counties_TIGER2016.shp")
+class(calcountiesshape)
+
+calvaxshape_data <- calcountiesshape %>% left_join(cal_vax, by = c("NAME" = "county"))
+
+tm_shape(calcountiesshape) + tm_polygons("gray", border.col = "black") + tm_shape(calvaxshape_data) + 
+    tm_polygons(col = "01/01/2021", n = 5, style = "fixed", title = "% Population Vaccinated", 
+        palette = "Purples", border.col = "transparent", breaks=c(0,20,40,60,80,100)) + tm_layout(legend.outside = TRUE, legend.outside.position = "right", 
+    legend.title.size = 1, legend.title.fontface = 2, frame=F)
+```
+
+## in loop form
+```{r}
+pal <- c("#f9ddda","#f2b9c4","#e597b9","#ce78b3","#ad5fad","#834ba0","#573b88")
+
+m1 <- tm_shape(calcountiesshape) + tm_polygons("gray", border.col = "black") + tm_shape(calvaxshape_data) + 
+    tm_polygons(col = "01/01/2021", n = 5, style = "fixed", title = paste("% Population Vaccinated", i), 
+        palette = pal, border.col = "transparent", breaks=c(0,20,40,60,80,100)) + tm_layout(legend.outside = TRUE, legend.outside.position = "right", 
+    legend.title.size = 1, legend.title.fontface = 2, frame=F) 
+
+
+m2 <- tm_shape(calcountiesshape) + tm_polygons("gray", border.col = "black") + tm_shape(calvaxshape_data) + 
+    tm_polygons(col = "01/02/2021", n = 5, style = "fixed", title = paste("% Population Vaccinated", i), 
+        palette = pal, border.col = "transparent", breaks=c(0,20,40,60,80,100)) + tm_layout(legend.outside = TRUE, legend.outside.position = "right", 
+    legend.title.size = 1, legend.title.fontface = 2, frame=F) 
+
+m3 <- tm_shape(calcountiesshape) + tm_polygons("gray", border.col = "black") + tm_shape(calvaxshape_data) + 
+    tm_polygons(col = "01/03/2021", n = 5, style = "fixed", title = paste("% Population Vaccinated", i), 
+        palette = pal, border.col = "transparent", breaks=c(0,20,40,60,80,100)) + tm_layout(legend.outside = TRUE, legend.outside.position = "right", 
+    legend.title.size = 1, legend.title.fontface = 2, frame=F) 
+
+m4 <- tm_shape(calcountiesshape) + tm_polygons("gray", border.col = "black") + tm_shape(calvaxshape_data) + 
+    tm_polygons(col = "01/04/2021", n = 5, style = "fixed", title = paste("% Population Vaccinated", i), 
+        palette = pal, border.col = "transparent", breaks=c(0,20,40,60,80,100)) + tm_layout(legend.outside = TRUE, legend.outside.position = "right", 
+    legend.title.size = 1, legend.title.fontface = 2, frame=F) 
+
+m5 <- tm_shape(calcountiesshape) + tm_polygons("gray", border.col = "black") + tm_shape(calvaxshape_data) + 
+    tm_polygons(col = "01/05/2021", n = 5, style = "fixed", title = paste("% Population Vaccinated", i), 
+        palette = pal, border.col = "transparent", breaks=c(0,20,40,60,80,100)) + tm_layout(legend.outside = TRUE, legend.outside.position = "right", 
+    legend.title.size = 1, legend.title.fontface = 2, frame=F) 
+
+m6 <- tm_shape(calcountiesshape) + tm_polygons("gray", border.col = "black") + tm_shape(calvaxshape_data) + 
+    tm_polygons(col = "01/06/2021", n = 5, style = "fixed", title = paste("% Population Vaccinated", i), 
+        palette = pal, border.col = "transparent", breaks=c(0,20,40,60,80,100)) + tm_layout(legend.outside = TRUE, legend.outside.position = "right", 
+    legend.title.size = 1, legend.title.fontface = 2, frame=F) 
+
+m7 <- tm_shape(calcountiesshape) + tm_polygons("gray", border.col = "black") + tm_shape(calvaxshape_data) + 
+    tm_polygons(col = "01/07/2021", n = 5, style = "fixed", title = paste("% Population Vaccinated", i), 
+        palette = pal, border.col = "transparent", breaks=c(0,20,40,60,80,100)) + tm_layout(legend.outside = TRUE, legend.outside.position = "right", 
+    legend.title.size = 1, legend.title.fontface = 2, frame=F) 
+
+m8 <- tm_shape(calcountiesshape) + tm_polygons("gray", border.col = "black") + tm_shape(calvaxshape_data) + 
+    tm_polygons(col = "01/08/2021", n = 5, style = "fixed", title = paste("% Population Vaccinated", i), 
+        palette = pal, border.col = "transparent", breaks=c(0,20,40,60,80,100)) + tm_layout(legend.outside = TRUE, legend.outside.position = "right", 
+    legend.title.size = 1, legend.title.fontface = 2, frame=F) 
+
+m9 <- tm_shape(calcountiesshape) + tm_polygons("gray", border.col = "black") + tm_shape(calvaxshape_data) + 
+    tm_polygons(col = "01/09/2021", n = 5, style = "fixed", title = paste("% Population Vaccinated", i), 
+        palette = pal, border.col = "transparent", breaks=c(0,20,40,60,80,100)) + tm_layout(legend.outside = TRUE, legend.outside.position = "right", 
+    legend.title.size = 1, legend.title.fontface = 2, frame=F) 
+
+m10 <- tm_shape(calcountiesshape) + tm_polygons("gray", border.col = "black") + tm_shape(calvaxshape_data) + 
+    tm_polygons(col = "01/10/2021", n = 5, style = "fixed", title = paste("% Population Vaccinated", i), 
+        palette = pal, border.col = "transparent", breaks=c(0,20,40,60,80,100)) + tm_layout(legend.outside = TRUE, legend.outside.position = "right", 
+    legend.title.size = 1, legend.title.fontface = 2, frame=F) 
+
+
+m11 <- tm_shape(calcountiesshape) + tm_polygons("gray", border.col = "black") + tm_shape(calvaxshape_data) + 
+    tm_polygons(col = "01/11/2021", n = 5, style = "fixed", title = paste("% Population Vaccinated", i), 
+        palette = pal, border.col = "transparent", breaks=c(0,20,40,60,80,100)) + tm_layout(legend.outside = TRUE, legend.outside.position = "right", 
+    legend.title.size = 1, legend.title.fontface = 2, frame=F) 
+
+m12 <- tm_shape(calcountiesshape) + tm_polygons("gray", border.col = "black") + tm_shape(calvaxshape_data) + 
+    tm_polygons(col = "01/12/2021", n = 5, style = "fixed", title = paste("% Population Vaccinated", i), 
+        palette = pal, border.col = "transparent", breaks=c(0,20,40,60,80,100)) + tm_layout(legend.outside = TRUE, legend.outside.position = "right", 
+    legend.title.size = 1, legend.title.fontface = 2, frame=F) 
+
+
+
+
+tmap_save(m1, "vaxmap1.png")
+tmap_save(m2, "vaxmap2.png")
+tmap_save(m3, "vaxmap3.png")
+tmap_save(m4, "vaxmap4.png")
+tmap_save(m5, "vaxmap5.png")
+tmap_save(m6, "vaxmap6.png")
+tmap_save(m7, "vaxmap7.png")
+tmap_save(m8, "vaxmap8.png")
+tmap_save(m9, "vaxmap9.png")
+tmap_save(m10, "vaxmap10.png")
+tmap_save(m11, "vaxmap11.png")
+tmap_save(m12, "vaxmap12.png")
+```
+
+
+
+
+
+## Deaths
+```{r}
+deathsdataraw <- read.csv("covid19cases_test.csv")
+deathsdataraw
+
+deathsdata <- deathsdataraw %>% filter(date=="01/01/2021"| 
+date=="01/02/2021"| 
+date=="01/03/2021"| 
+date=="01/04/2021"| 
+date=="01/05/2021"| 
+date=="01/06/2021"| 
+date=="01/07/2021"| 
+date=="01/08/2021"| 
+date=="01/09/2021"| 
+date=="01/10/2021"| 
+date=="01/11/2021"| 
+date=="01/12/2021") %>% filter( area!="California", area!="Out of state", area!="Unknown") %>% group_by(area, date) %>% select(area, date, deaths)
+unique(deathsdata$area)
+
+cal_deaths<- deathsdata %>% select(area, date, deaths)%>% spread(date, deaths)
+
+
+```
+
+## Mapping for deaths
+```{r}
+
+
+caldeathshape_data <- calcountiesshape %>% left_join(cal_deaths, by = c("NAME" = "area"))
+
+for(i in colnames(cal_deaths)[2:length(colnames(cal_deaths))]){
+  print(range(cal_deaths[,i]))
+}
+
+
+pal <- c("#d1eeea","#a8dbd9","#85c4c9","#68abb8","#4f90a6","#3b738f","#2a5674")
+
+m1 <- tm_shape(calcountiesshape) + tm_polygons("gray", border.col = "black") + tm_shape(caldeathshape_data) + 
+    tm_polygons(col = "01/01/2021", n = 5, style = "fixed", title = paste("Nr of Deaths", i), 
+        palette = pal, border.col = "transparent", breaks=c(0,10,20,30,40)) + tm_layout(legend.outside = TRUE, legend.outside.position = "right", 
+    legend.title.size = 1, legend.title.fontface = 2, frame=F) +
+  tm_layout (frame = FALSE, bg.color = "transparent")
+
+
+m2 <- tm_shape(calcountiesshape) + tm_polygons("gray", border.col = "black") + tm_shape(caldeathshape_data) + 
+    tm_polygons(col = "01/02/2021", n = 5, style = "fixed", title = paste("Nr of Deaths", i), 
+        palette = pal, border.col = "transparent", breaks=c(0,10,20,30,40)) + tm_layout(legend.outside = TRUE, legend.outside.position = "right", 
+    legend.title.size = 1, legend.title.fontface = 2, frame=F) 
+
+m3 <- tm_shape(calcountiesshape) + tm_polygons("gray", border.col = "black") + tm_shape(caldeathshape_data) + 
+    tm_polygons(col = "01/03/2021", n = 5, style = "fixed", title = paste("Nr of Deaths", i), 
+        palette = pal, border.col = "transparent", breaks=c(0,10,20,30,40)) + tm_layout(legend.outside = TRUE, legend.outside.position = "right", 
+    legend.title.size = 1, legend.title.fontface = 2, frame=F) 
+
+m4 <- tm_shape(calcountiesshape) + tm_polygons("gray", border.col = "black") + tm_shape(caldeathshape_data) + 
+    tm_polygons(col = "01/04/2021", n = 5, style = "fixed", title = paste("Nr of Deaths", i), 
+        palette = pal, border.col = "transparent", breaks=c(0,10,20,30,40)) + tm_layout(legend.outside = TRUE, legend.outside.position = "right", 
+    legend.title.size = 1, legend.title.fontface = 2, frame=F) 
+
+m5 <- tm_shape(calcountiesshape) + tm_polygons("gray", border.col = "black") + tm_shape(caldeathshape_data) + 
+    tm_polygons(col = "01/05/2021", n = 5, style = "fixed", title = paste("Nr of Deaths", i), 
+        palette = pal, border.col = "transparent", breaks=c(0,10,20,30,40)) + tm_layout(legend.outside = TRUE, legend.outside.position = "right", 
+    legend.title.size = 1, legend.title.fontface = 2, frame=F) 
+
+m6 <- tm_shape(calcountiesshape) + tm_polygons("gray", border.col = "black") + tm_shape(caldeathshape_data) + 
+    tm_polygons(col = "01/06/2021", n = 5, style = "fixed", title = paste("Nr of Deaths", i), 
+        palette = pal, border.col = "transparent", breaks=c(0,10,20,30,40)) + tm_layout(legend.outside = TRUE, legend.outside.position = "right", 
+    legend.title.size = 1, legend.title.fontface = 2, frame=F) 
+
+m7 <- tm_shape(calcountiesshape) + tm_polygons("gray", border.col = "black") + tm_shape(caldeathshape_data) + 
+    tm_polygons(col = "01/07/2021", n = 5, style = "fixed", title = paste("Nr of Deaths", i), 
+        palette = pal, border.col = "transparent", breaks=c(0,10,20,30,40)) + tm_layout(legend.outside = TRUE, legend.outside.position = "right", 
+    legend.title.size = 1, legend.title.fontface = 2, frame=F) 
+
+m8 <- tm_shape(calcountiesshape) + tm_polygons("gray", border.col = "black") + tm_shape(caldeathshape_data) + 
+    tm_polygons(col = "01/08/2021", n = 5, style = "fixed", title = paste("Nr of Deaths", i), 
+        palette = pal, border.col = "transparent", breaks=c(0,10,20,30,40)) + tm_layout(legend.outside = TRUE, legend.outside.position = "right", 
+    legend.title.size = 1, legend.title.fontface = 2, frame=F) 
+
+m9 <- tm_shape(calcountiesshape) + tm_polygons("gray", border.col = "black") + tm_shape(caldeathshape_data) + 
+    tm_polygons(col = "01/09/2021", n = 5, style = "fixed", title = paste("Nr of Deaths", i), 
+        palette = pal, border.col = "transparent", breaks=c(0,10,20,30,40)) + tm_layout(legend.outside = TRUE, legend.outside.position = "right", 
+    legend.title.size = 1, legend.title.fontface = 2, frame=F) 
+
+m10 <- tm_shape(calcountiesshape) + tm_polygons("gray", border.col = "black") + tm_shape(caldeathshape_data) + 
+    tm_polygons(col = "01/10/2021", n = 5, style = "fixed", title = paste("Nr of Deaths", i), 
+        palette = pal, border.col = "transparent", breaks=c(0,10,20,30,40)) + tm_layout(legend.outside = TRUE, legend.outside.position = "right", 
+    legend.title.size = 1, legend.title.fontface = 2, frame=F) 
+
+
+m11 <- tm_shape(calcountiesshape) + tm_polygons("gray", border.col = "black") + tm_shape(caldeathshape_data) + 
+    tm_polygons(col = "01/11/2021", n = 5, style = "fixed", title = paste("Nr of Deaths", i), 
+        palette = pal, border.col = "transparent", breaks=c(0,10,20,30,40)) + tm_layout(legend.outside = TRUE, legend.outside.position = "right", 
+    legend.title.size = 1, legend.title.fontface = 2, frame=F) 
+
+m12 <- tm_shape(calcountiesshape) + tm_polygons("gray", border.col = "black") + tm_shape(caldeathshape_data) + 
+    tm_polygons(col = "01/12/2021", n = 5, style = "fixed", title = paste("Nr of Deaths", i), 
+        palette = pal, border.col = "transparent", breaks=c(0,10,20,30,40)) + tm_layout(legend.outside = TRUE, legend.outside.position = "right", 
+    legend.title.size = 1, legend.title.fontface = 2, frame=F) 
+
+
+tmap_save(m1, "deathmap1.png")
+tmap_save(m2, "deathmap2.png")
+tmap_save(m3, "deathmap3.png")
+tmap_save(m4, "deathmap4.png")
+tmap_save(m5, "deathmap5.png")
+tmap_save(m6, "deathmap6.png")
+tmap_save(m7, "deathmap7.png")
+tmap_save(m8, "deathmap8.png")
+tmap_save(m9, "deathmap9.png")
+tmap_save(m10, "deathmap10.png")
+tmap_save(m11, "deathmap11.png")
+tmap_save(m12, "deathmap12.png")
+
+```
+
+
+
+
+## Ethnicities Dot Map
+```{r}
+library(maptools)
+library(rgeos)
+library(tidyverse)
+library(rgdal)
+library(ggthemes)
+
+
+
+#read data
+ethdataraw <- read.csv("eth_census_tract.csv")
+# ethdataraw$other_real <- ethdataraw$totalpop - (ethdataraw$white+ethdataraw$black+ethdataraw$native_indian_american+ethdataraw$asian+ethdataraw$native_hawaiian+ethdataraw$other)
+
+ethdataraw <- ethdataraw %>% select(geography, black, native_indian_american, asian,native_hawaiian, other )
+
+calcountiesshape <- readOGR(dsn = "tl_2019_06_tract.shp") %>%
+  spTransform(CRS("+proj=longlat +datum=WGS84"))
+
+#bind data
+cal_eth_data<- merge(calcountiesshape@data, ethdataraw, by.x="NAME", by.y="geography", sort=FALSE)
+
+
+
+#calculate dots
+num.dots <- select(cal_eth_data, `black`: `other`) / 1000
+
+for(i in 1:nrow(num.dots)){
+  for(j in 1:ncol(num.dots)){
+    if(num.dots[i,j]<1){
+      num.dots[i,j] <- 1
+    } 
+  }
+  
+}
+
+#dots in polygon
+sp.dfs <- lapply(names(num.dots), function(x) {
+  dotsInPolys(calcountiesshape, as.integer(num.dots[, x]), f="random")
+})
+
+
+##### base plot ####
+pal <- c("#4053d3", "#ddb310", "#b51d14", "#00beff", "#00b25d", "#8a034f")
+
+# first plot the london boroughs as a base layer with hidden borders to keep a blank canvas
+# then plot the dots
+par(mar = c(0,0,0,0))
+plot(calcountiesshape, lwd = 0.01, border = "#d3d3d3")
+for (i in 1:length(sp.dfs)) {
+  plot(sp.dfs[[i]], add = T, pch = 16, cex = 0.1, col = pal[i])
+}
+```
+
+# Dot Map in ggplot
+```{r}
+calcountiesshape@data$id <- row.names(calcountiesshape@data)
+calcountiesshape.points <- fortify(calcountiesshape, region = "id")
+calcountiesshape.df <- merge(calcountiesshape.points, calcountiesshape@data, by = "id")
+
+ggplot(calcountiesshape.df, aes(long, lat, group = group)) +
+  geom_path() +
+  coord_map()
+
+# for each sp.df, scrape out the coordinates of each dot and store as a regular dataframe
+dfs <- lapply(sp.dfs, function(x) {
+  data.frame(coordinates(x)[,1:2])
+})
+
+# we're going to bind these dataframes together but first we need to add an ethnicity
+# variable to allow for categorising data by colour after binding
+# the double square brackets [[]] are used to select the dataframes held within the list
+ethnicities<- c("black", "native_indian_american", "asian", "native_hawaiian", "other")
+for (i in 1:length(ethnicities)) {
+  dfs[[i]]$ethnicities <- ethnicities[i]
+}
+
+# final bit of data prep: bind all dataframes into one then set factor levels
+# the factor level will dictate the order in which dots are plotted
+# we want the category with most dots to be plotted first and vice versa, 
+# so that categories with the most dots don't mask categories with fewer dots
+dots.final <- bind_rows(dfs)
+dots.final$ethnicities <- factor(dots.final$ethnicities, levels = ethnicities)
+
+ggplot(calcountiesshape.df) +
+  geom_point(data = dots.final, aes(x, y, colour = ethnicities), size = 0.1) +
+  geom_path(aes(long, lat, group = group), colour = "grey", alpha=.4) +
+  scale_colour_manual(values = pal) +
+  theme_map() +
+  theme(plot.background = element_rect(fill = "white"), legend.position = "right") +
+  coord_map()
+
+```
+
+```{r}
+library(usmap)
+plot_usmap()
+```
+
+## Treemap 
+```{r}
+library(treemap)
+
+
+
+# dataset
+group <- c(rep("group-1",4),rep("group-2",2),rep("group-3",3))
+subgroup <- paste("subgroup" , c(1,2,3,4,1,2,1,2,3), sep="-")
+value <- c(13,5,22,12,11,7,3,1,23)
+data <- data.frame(group,subgroup,value)
+
+eth <- c("AI/AN", "Asian American", "Black","Latino", "NHPI", "White", "Multi-race", "Other" )
+deaths <- c(0.5, 11.2, 7.1, 42.4, 0.6, 35.9, 1.5, 0.8)
+data <- data.frame(eth, deaths)
+ 
+
+pal <- c("#88CCEE","#CC6677","#DDCC77","#117733","#332288","#AA4499","#44AA99","#999933","#882255","#661100","#6699CC","#888888")
+# basic treemap
+p <- treemap(data,
+            index=c("eth"),
+            vSize="deaths",
+            type="index",
+            palette = pal,
+            align.labels=list(
+              c("center", "center"), 
+              c("right", "bottom")
+            )  
+          )   
+```
+

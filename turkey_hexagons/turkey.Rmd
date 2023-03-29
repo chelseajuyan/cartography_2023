@@ -1,0 +1,442 @@
+---
+title: "Untitled"
+author: "Matthew Lam"
+date: "2023-02-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## HDX API Setup
+```{r}
+# library(remotes)
+# remotes::install_gitlab("dickoa/rhdx")
+library(rhdx)
+
+#connecting to prod db
+set_rhdx_config(hdx_site="prod")
+get_rhdx_config()
+```
+
+
+## Getting Turkey admin boundaries Data
+```{r}
+#libraries
+library(sf)
+library(sp)
+library(tidyverse)
+library(tmap)
+
+#read manually
+turkeyadminboundaries <- read_sf("tur_polbna_adm2.shp")
+
+#baseplot
+plot(st_geometry(turkeyadminboundaries))
+```
+
+## load hex
+```{r}
+biggesthex <- read_sf("biggesthex.shp")
+medhex <- read_sf("mediumhex.shp")
+smallhex <- read_sf("hex0.2.shp")
+smallesthex <- read_sf("smallhex.shp")
+
+plot(st_geometry(biggesthex))
+plot(st_geometry(medhex))
+plot(st_geometry(smallhex))
+plot(st_geometry(smallesthex))
+```
+
+## get population data from hdx
+```{r}
+#search + pull + load data from hdx
+turkeypopulation <- search_datasets("Türkiye - Subnational Population Statistics") %>% pluck(1) %>% get_resource(4) %>% read_resource(download_folder=tempdir()) %>% select(year, ADM2_EN, ADM2_PCODE, T_TL) #again! SO DAMN CLEAN <333
+
+turkeypopulation 
+```
+
+## pop to hex
+```{r}
+#configure small hex
+#coeerce from sf to sp object
+smallhex_df <- as_Spatial(smallhex)
+class(smallhex_df)
+
+
+#basic hex plot
+ggplot()+
+  geom_polygon(data=smallhex_df, aes(x=long, y=lat, group=group), fill="skyblue", color="white")+theme_void()+coord_map()
+```
+
+
+# Pull Turkey Heatlh Points
+```{r}
+turkeyhealthpoints <- search_datasets("HOTOSM Turkey Health Facilities (OpenStreetMap Export)") %>% pluck(1) %>% get_resource(1) %>% read_resource(download_folder=tempdir()) 
+
+plot(st_geometry(turkeyhealthpoints))
+
+st_coordinates(turkeyhealthpoints)
+```
+
+
+## Point in polygon to get healthcare facilities per pop
+```{r}
+#stmakegrid
+grid <- st_make_grid(turkeyadminboundaries, what="polygons", square=FALSE, cellsize=0.6)
+
+
+#first, get population 
+turkeypopadmin_spdf <- left_join(turkeyadminboundaries, turkeypopulation, by=c("pcode"= "ADM2_PCODE"))
+turkeypopadmin_spdf <- as_Spatial(turkeypopadmin_spdf)
+turkeypopadmin_spdf@data$T_TL <- as.numeric(turkeypopadmin_spdf@data$T_TL)
+
+#fortify? 
+library(broom)
+turkeypopadmin_spdf_fortified <- tidy(turkeypopadmin_spdf, region ="pcode")
+
+#join again after fortification 
+turkeypopadmin_spdf_fortified <- turkeypopadmin_spdf_fortified %>% left_join(., turkeypopulation, by=c("id"="ADM2_PCODE"))
+
+
+pal <- c("#fde0c5","#facba6","#f8b58b","#f59e72","#f2855d","#ef6a4c","#eb4a40")
+
+
+#transform points into spatial points
+plot(turkeyhealthpoints)
+st_crs(turkeyhealthpoints)
+turkeyhealthpoints_df <- as.data.frame(st_coordinates(turkeyhealthpoints))
+  
+#simple map
+library(viridis)
+ggplot()+
+  geom_polygon(data=turkeypopadmin_spdf_fortified, aes(x=long, y=lat, group=group, fill=T_TL))+
+  theme_void()+
+  scale_fill_viridis(name="Population")+
+  geom_point(data=turkeyhealthpoints_df,aes(x=X, y=Y), col="red")+
+  coord_map()
+
+
+
+
+## point in polygon! 
+class(turkeyhealthpoints)
+turkeyhealthpoints_spdf <- as_Spatial(turkeyhealthpoints)
+res <- over(turkeyhealthpoints_spdf, turkeypopadmin_spdf)
+a<- table(res$pcode)
+a_df <- data.frame(rbind(a))
+point_in_poly_count <- gather(a_df, pcode, count_health_facilities, TUR001002:TUR081008, factor_key=T)
+
+
+#merge point in poly count back into the admin boundaries
+df2 <- merge(turkeypopadmin_spdf_fortified, point_in_poly_count, by.x="id", by.y="pcode")
+df2$health_per_capita <- (df2$count_health_facilities/df2$T_TL.x)
+df2$health_per_100000 <- df2$health_per_capita * 100000
+
+
+#plotting
+
+#define the theme
+theme_map <- function(...) {
+  theme_minimal() +
+  theme(
+    text = element_text(family = "Ubuntu Regular", color = "#22211d"),
+    axis.line = element_blank(),
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    # panel.grid.minor = element_line(color = "#ebebe5", size = 0.2),
+    panel.grid.major = element_line(color = "#ebebe5", size = 0.2),
+    panel.grid.minor = element_blank(),
+    plot.background = element_rect(fill = "#f5f5f2", color = NA), 
+    panel.background = element_rect(fill = "#f5f5f2", color = NA), 
+    legend.background = element_rect(fill = "#f5f5f2", color = NA),
+    panel.border = element_blank(),
+    ...
+  )
+}
+
+library(ggthemes)
+pretty_breaks <- c(0.5,7.3,16.8,28.1,128.8)
+#find extremes
+minVal <- min(df2$health_per_100000, na.rm = T)
+maxVal <- max(df2$health_per_100000, na.rm = T)
+
+#compute labels
+labels <- c()
+brks <- c(minVal, pretty_breaks, maxVal)
+# round the labels (actually, only the extremes)
+for(idx in 1:length(brks)){
+  labels <- c(labels,round(brks[idx + 1], 2))
+}
+labels <- labels[1:length(labels)-1]
+
+
+#define a new variable in the dataset just as above
+df2$brks <- cut(df2$health_per_100000,
+                breaks=brks,
+                include.lowest=TRUE,
+                labels=labels)
+
+
+#get scales
+brks_scale <- levels(df2$brks)
+labels_scale <- rev(brks_scale)
+
+
+p <- ggplot()+
+  geom_polygon(data=df2, aes(fill=health_per_100000, 
+                             x=long, 
+                             y=lat, 
+                             group=group))+
+  geom_path(data=turkeypopadmin_spdf_fortified , aes(x=long, 
+                          y=lat, 
+                          group=group), 
+            color="black", size=0.1)+
+  coord_equal()+
+  theme_map()+
+  labs(x=NULL, 
+       y=NULL, 
+       title="Healthcare Facilities per 100000 People")+
+  scale_fill_viridis(option = "magma", direction = -1)
+
+p
+```
+
+
+## polygons to hexagons
+```{r}
+
+library(grid)
+g <- st_make_grid(turkeyadminboundaries, square=FALSE)
+
+
+
+ig = lengths(st_intersects(g, turkeyadminboundaries)) >0
+
+
+plot(st_geometry(turkeyadminboundaries))
+plot(g[ig], col="red", add=TRUE)
+```
+
+## a tmap approach
+```{r}
+library(tmap)
+library(janitor)
+library(tidyverse)
+library(sp)
+library(sf)
+
+
+
+
+#using tmap
+pal <- c("#fde0c5","#facba6","#f8b58b","#f59e72","#f2855d","#ef6a4c","#eb4a40")
+
+pal2 <- c("#d2fbd4","#a5dbc2","#7bbcb0","#559c9e","#3a7c89","#235d72","#123f5a")
+
+
+
+
+#clean up df2
+df2 <- df2 %>% group_by(id) %>% select(id,count_health_facilities, health_per_100000, T_TL.x)
+df2 <- unique(df2)
+
+df2_sdf <- left_join(turkeyadminboundaries,df2, by=c("pcode"="id"))
+#get NAs to 0
+df2_sdf$health_per_100000[is.na(df2_sdf$health_per_100000)] <- 0
+df2_sdf <- st_as_sf(df2_sdf)
+class(df2_sdf)
+
+#map inspection
+tmap_mode("view")
+tm_shape(turkeyadminboundaries)+tm_polygons("gray", border.col="white")+
+  tm_shape(df2_sdf)+
+  tm_polygons(col="health_per_100000", n=5, style="jenks", palette=pal2,)+
+  tm_layout(legend.outside=TRUE, 
+            legend.outside.position="right")
+
+
+#creating dots in polygon for health per 1000000
+num.dots <- as.data.frame(select(df2_sdf, health_per_100000))
+
+library(maptools)
+library(rgeos)
+library(tidyverse)
+library(rgdal)
+library(ggthemes)
+
+
+#create a dot in polygon which corresponds to the healthcarefacilities per 100,000 so that we can count again in the hexagons. 
+sp.dfs <- lapply(names(num.dots)[1], function(x) {
+  dotsInPolys(turkeyadminboundaries, as.integer(num.dots[, x]), f="random")
+})
+
+
+#make this a spatial obejct
+df2_spdf <- as_Spatial(df2_sdf)
+
+#create thd dots and assign into df2_spdf. CAll this a new object called healthper100000 points. 
+healthper100000points <- dotsInPolys(df2_spdf, as.integer(df2_sdf$health_per_100000), f="random")
+```
+
+
+
+
+## now with hexagons
+```{r}
+library(rgeos)
+
+#make hexagons using the geometry of turkeyhealthpoints, with cellsize 0.2. 
+area_honeycomb_grid <- st_make_grid(st_geometry(turkeyhealthpoints), c(150,150), what="polygons", square=FALSE, cellsize=.2)
+#inspect
+plot(area_honeycomb_grid)
+
+
+#to sf and add grid ID
+honeycomb_grid_sf <- st_sf(area_honeycomb_grid)%>%
+  mutate(grid_id = 1:length(lengths(area_honeycomb_grid)))
+
+#make this an sf object to work with st_intersects() and friends. 
+healthper100000points <- st_as_sf(healthper100000points)
+
+#align the crs with the grid
+st_crs(healthper100000points) = st_crs(honeycomb_grid_sf)
+
+#point in poly count
+honeycomb_grid_sf$healthper100000 <- lengths(st_intersects(honeycomb_grid_sf, st_geometry(healthper100000points))) 
+
+
+                                                  
+# remove grid without value of 0 (i.e. no points in side that grid)
+honeycomb_count = filter(honeycomb_grid_sf, lengths(st_intersects(honeycomb_grid_sf, st_geometry(turkeyadminboundaries)))>0)
+
+pal2 <- c("#f7feae","#b7e6a5","#7ccba2","#46aea0","#089099","#235d72","#123f5a")
+pal4 <- c("#fcde9c","#faa476","#f0746e","#e34f6f","#dc3977","#b9257a","#7c1d6f")
+pal3 <- c("#f3cbd3","#eaa9bd","#dd88ac","#ca699d","#b14d8e","#91357d","#6c2167")
+teal <- c("#d1eeea","#a8dbd9","#85c4c9","#68abb8","#4f90a6","#3b738f","#2a5674")
+
+
+
+                                                  
+#mapping
+tmap_mode("view")
+tm_shape(honeycomb_count)+
+  tm_fill(col="healthper100000",
+          palette="-magma",
+          style="jenks",
+          n=6,
+          id="grid_id", 
+          showNA=FALSE, 
+          alpha=0.6)+
+  tm_borders(col="grey40", lwd=0.7)+
+  tm_layout(frame=F, legend.outside=T)
+
+#write to shapefile and continue in blender
+ st_write(honeycomb_count, dsn=".", layer = "hexagons", driver= "ESRI Shapefile")
+```
+
+
+
+## Now in Mapdeck <- mapdeck doesn't have good customisability 
+```{r}
+library(mapdeck)
+
+key <- "pk.eyJ1IjoibWF0dGhld2dhcmV0aGxhbSIsImEiOiJjbGI2eWp4NTUwNXgyM3dsamR6YjlvNjI5In0.UJBDZgX18UTqNg64t4e41A"
+
+mapdeck(style = 'mapbox://styles/mapbox/dark-v9')
+
+
+df <- read.csv(paste0(
+  'https://raw.githubusercontent.com/uber-common/deck.gl-data/master/examples/'
+  , '3d-heatmap/heatmap-data.csv'
+))
+
+df <- df[!is.na(df$lng), ]
+
+df$e <- sample(100, size = nrow(df), replace = TRUE)
+
+mapdeck( style = mapdeck_style("streets"), pitch = 45) %>%
+  add_hexagon(
+    data = df[ df$lat > 54.5, ]
+    , lat = "lat"
+    , lon = "lng"
+    , layer_id = "hex_layer"
+    , elevation_scale = 50
+    , elevation="e"
+    , colour_range = colourvalues::colour_values(1:6, palette = colourvalues::get_palette("viridis")[70:256,])
+  )
+
+
+mapdeck(style=mapdeck_style("dark"), pitch=45)%>%
+  add_hexagon(
+    data=honeycomb_count 
+    ,layer="hex_layer"
+    , elevation= "healthper100000"
+    , elevation_scale=10
+    
+  )
+```
+
+
+
+
+## Mapdeck polygons <- but doesn't look good
+```{r}
+library(sf)
+library(geojsonsf)
+
+sf <- geojson_sf("https://symbolixau.github.io/data/geojson/SA2_2016_VIC.json")
+sf$e <- sf$AREASQKM16 * 10 
+
+mapdeck(token = key, style = mapdeck_style("dark"), pitch=45) %>%
+  add_polygon(
+    data = honeycomb_count
+    , layer = "polygon_layer"
+    , fill_colour = "healthper100000"
+    , elevation = "healthper100000"
+    , elevation_scale=100
+    , palette = "ylorbr"
+  )
+``` 
+
+
+
+
+
+## Read in the shapefile for globe
+```{r}
+worldraw <- st_read("~/OneDrive - University College London/Y3/Cartography and Data Visualisation/Week 6 Task/ne_10m_admin_0_countries/ne_10m_admin_0_countries.shp")
+
+plot(worldraw)
+
+
+#reprojecting to world from space
+worldreprojected <- st_transform(worldraw, crs="ESRI:102038")
+
+
+#now recenter
+proj2 <- st_transform(worldraw,"+proj=ortho +lat_0=39.233288 +lon_0=35.725534 +x_0=0 +y_0=0 +ellps=sphere +units=m +no_defs")# 39.233288, 35.725534
+
+plot(st_geometry(worldreprojected))
+plot(st_geometry(proj2))
+proj2 <- st_as_sf(proj2)
+
+#get turkey
+library(tidyverse)
+turkey <- proj2 %>% filter(ADMIN=="Turkey")
+plot(st_geometry(turkey))
+
+```
+
+
+
+
+
+
+
+
+

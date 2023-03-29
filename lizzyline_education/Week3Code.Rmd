@@ -1,0 +1,180 @@
+---
+title: "Untitled"
+author: "Matthew Lam"
+date: "2023-01-23"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+```{r}
+setwd("~/OneDrive - University College London/Y3/Cartography and Data Visualisation/Week 3 Task/London-wards-2014_ESRI")
+a <- st_read("London_Ward.shp")
+
+plot(a)
+
+st_crs(a)
+
+st_crs(pnts)
+```
+
+
+## Load Ward
+```{r}
+library(sf)
+library(sp)
+library(tidyverse)
+library(tmap)
+
+
+ward<- st_read("London_Ward.shp")
+plot(ward)
+
+tm_shape(ward) + tm_polygons("gray", border.col = "black")
+```
+
+
+## Ward Data
+```{r}
+setwd("~/OneDrive - University College London/Y3/Cartography and Data Visualisation/Week 3 Task")
+rawdata <- read.csv("gcse_scores_clean.csv")
+rawdata
+
+
+ward_dataframe <- as.data.frame(ward_sdf)
+
+r <- merge(rawdata, ward_dataframe, by.x="wardcode", by.y="GSS_CODE")
+
+r <- r %>% select(wardcode, X2014_gcse_points.x, BOROUGH)
+
+write.csv(r, "lizzylinedata.csv")
+```
+
+
+
+
+
+
+#bind data
+```{r}
+# join data
+ward_sdf <- left_join(ward, rawdata, by = c("GSS_CODE" = "wardcode"))
+
+
+
+tmap_mode("view")
+tm_shape(ward) + tm_polygons("gray", border.col = "gray") + tm_shape(ward_sdf) + 
+    tm_polygons(col = "X2014_gcse_points", n = 5, style = "jenks", title = "GCSE per Student (2014)", 
+        palette = "Purples", border.col = "transparent") + tm_layout(legend.outside = TRUE, legend.outside.position = "right", 
+    legend.title.size = 1, legend.title.fontface = 2)
+```
+
+
+
+
+## geocoding using tidygeocoder
+```{r}
+library(tidygeocoder)
+
+#read in addresses
+stations <- read.csv("stationsv2.csv")
+
+# geocode the addresses
+lat_longs <- stations %>%
+  geocode(station_address, method = 'osm', lat = latitude , long = longitude)
+```
+
+
+
+## Read in lizzy line coords
+```{r}
+library(tidyverse)
+stops_xy <- lat_longs %>% select(longitude, latitude)
+
+#make into point object
+library(sp)
+stops_spdf <- SpatialPointsDataFrame(coords =stops_xy, data = lat_longs,
+                               proj4string = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"))
+plot(stops_spdf)
+
+```
+
+
+
+## map with points
+```{r}
+
+
+#transform ward and ward_spdf to wgs84
+
+ward <- st_transform(ward, crs=4326)
+ward_sdf <- st_transform(ward_sdf, crs=4326)
+
+
+tmap_mode("view")
+
+tm_shape(ward) + tm_polygons("gray", border.col = "gray") + tm_shape(ward_sdf) + 
+    tm_polygons(col = "X2014_gcse_points", n = 5, style = "jenks", title = "GCSE Point Scores (2014)", 
+        palette = "Purples", border.col = "transparent") + tm_layout(legend.outside = TRUE, legend.outside.position = "right", 
+    legend.title.size = 1, legend.title.fontface = 2)+
+  tm_shape(stops_spdf)+
+  tm_dots(size=0.1, col="red")
+```
+
+
+
+## finding the intersect with point and polygons
+```{r}
+#make this into an sf
+pnts_sf <- st_as_sf(stops_spdf, coords=c("latitude", "longitude"), crs=st_crs(ward_sdf))
+
+#find the intersections
+pnts <- pnts_sf%>% mutate(
+  intersection = as.integer(st_intersects(geometry, ward_sdf))
+  , area = if_else(is.na(intersection), '', ward_sdf$wardname[intersection]), 
+  gcsescore = if_else(is.na(intersection), '',
+                      as.character(ward_sdf$X2014_gcse_points[intersection]))
+)
+```
+
+#clean up and calculate circle widths
+```{r}
+
+#clean up dataframe
+final_df <- pnts %>% select(station_address,latitude, longitude, gcsescore)
+final_df <- as.data.frame(final_df)
+
+#make numeric 
+final_df$gcsescore <- as.numeric(final_df$gcsescore)
+
+
+#get quintiles
+quantile(final_df$gcsescore, probs = seq(0, 1, 1/5), na.rm=T)   
+
+quintiles <- c("292 to 308", "309 to 314", "315 to 329", "330 to 334", "335 to 363")
+
+#write to csv
+write.csv(final_df, "stations_with_circle_widths.csv")
+```
+
+
+#Mapping
+```{r}
+stops_spdf <- SpatialPointsDataFrame(coords =stops_xy, data = final_df,
+                               proj4string = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"))
+
+#map again
+tmap_mode("plot")
+tm_shape(ward) + tm_polygons("gray", border.col = "gray") + tm_shape(ward_sdf) + 
+    tm_polygons(col = "X2014_gcse_points", n = 5, style = "jenks", title = "GCSE Point Scores (2014)", 
+        palette = "Purples", border.col = "transparent") + tm_layout(legend.outside = TRUE, legend.outside.position = "right", 
+    legend.title.size = 1, legend.title.fontface = 2)+
+  tm_shape(stops_spdf)+
+  tm_bubbles(size = "gcsescore", col = "red",style = "quantile", legend.size.show = T, title.col = "GCSE Score")
+```
+
+
