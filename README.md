@@ -5,9 +5,9 @@
 Every week, we worked as a group to create a map or data visualization
 on an assigned topic. We use a lot of R and QGIS for data wrangling and
 GIS; Blender for 3D visualizations and Illustrator to put everything
-together.
+together. All the data we used are open-source or publicly available.
 
-The themes for each week are:
+Here’s what we produced each week:
 
 |                                                                                                                              |                                      |
 |------------------------------------------------------|------------------|
