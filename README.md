@@ -10,7 +10,7 @@ together.
 The themes for each week are:
 
 |                                                                                                                              |                                      |
-|----------------------------------------------------|--------------------|
+|------------------------------------------------------|------------------|
 | “Using a dataset of your choice for the UK\* create a map that highlights a societal inequality.”                            | ![](images/lizzyline_dark_final.jpg) |
 | “Create a map/graphic of COVID-19 cases or deaths that would be suitable for a government briefing to the public.”           | ![](images/map_final.jpg)            |
 | “Using data from Natural Earth create a map that reflects the core principles of visual hierarchy and design”                | ![](images/week5final.jpg)           |
@@ -18,4 +18,4 @@ The themes for each week are:
 | “Using the NASA fire data introduced above create a map that showcases at least two different map projections.”              | ![](images/final_still.jpg)          |
 | “Taking one of the datasets you have mapped already, create a new map from it but with a much improved basemap for context.” | ![](images/Picture%201.jpg)          |
 | “Using a dataset of your choice from Our World in Data create two compelling charts (each of a different type).”             | ![](images/map_still.jpg)            |
-| “Using a dataset of your choice from Our World in Data create two compelling charts (each of a different type).”             | ![](newplot(1).jpg)                  |
+| “Using a dataset of your choice from Our World in Data create two compelling charts (each of a different type).”             | ![](images/newplot(1).jpg)           |
