@@ -9,9 +9,9 @@ together.
 
 The themes for each week are:
 
-<table style="width:86%;">
+<table style="width:90%;">
 <colgroup>
-<col style="width: 15%" />
+<col style="width: 19%" />
 <col style="width: 70%" />
 </colgroup>
 <tbody>
@@ -42,7 +42,7 @@ The themes for each week are:
 <tr class="odd">
 <td>Week 10</td>
 <td><p><img src="images/map_still.jpg" /></p>
-<p><img src="Screenshot%202023-03-30%20at%2008.57.45.png" /></p></td>
+<p><img src="Screenshot%202023-03-30%20at%2008.57.45.jpg" /></p></td>
 </tr>
 </tbody>
 </table>
