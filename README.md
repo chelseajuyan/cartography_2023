@@ -9,40 +9,12 @@ together.
 
 The themes for each week are:
 
-<table style="width:85%;">
-<colgroup>
-<col style="width: 19%" />
-<col style="width: 65%" />
-</colgroup>
-<tbody>
-<tr class="odd">
-<td>Week 2:</td>
-<td><img src="images/lizzyline_dark_final.jpg" /></td>
-</tr>
-<tr class="even">
-<td>Week 3:</td>
-<td><img src="images/map_final.jpg" /></td>
-</tr>
-<tr class="odd">
-<td>Week 4:</td>
-<td><img src="images/week5final.jpg" /></td>
-</tr>
-<tr class="even">
-<td>Week 5:</td>
-<td><img src="images/finalmapweek6.jpg" /></td>
-</tr>
-<tr class="odd">
-<td>Week 7:</td>
-<td><img src="images/final_still.jpg" /></td>
-</tr>
-<tr class="even">
-<td>Week 8:</td>
-<td><img src="images/Picture%201.jpg" /></td>
-</tr>
-<tr class="odd">
-<td>Week 10</td>
-<td><p><img src="images/map_still.jpg" /></p>
-<p><img src="newplot(1).jpg" /></p></td>
-</tr>
-</tbody>
-</table>
+| “Using a dataset of your choice for the UK\* create a map that highlights a societal inequality.”                            |                               |
+|----------------------------------------------------|--------------------|
+| “Create a map/graphic of COVID-19 cases or deaths that would be suitable for a government briefing to the public.”           | ![](images/map_final.jpg)     |
+| “Using data from Natural Earth create a map that reflects the core principles of visual hierarchy and design”                | ![](images/week5final.jpg)    |
+| “Create a map using a dataset of your choice from the Humanitarian Data Exchange (HDX).”                                     | ![](images/finalmapweek6.jpg) |
+| “Using the NASA fire data introduced above create a map that showcases at least two different map projections.”              | ![](images/final_still.jpg)   |
+| “Taking one of the datasets you have mapped already, create a new map from it but with a much improved basemap for context.” | ![](images/Picture%201.jpg)   |
+| “Using a dataset of your choice from Our World in Data create two compelling charts (each of a different type).”             | ![](images/map_still.jpg)     |
+| “Using a dataset of your choice from Our World in Data create two compelling charts (each of a different type).”             | ![](newplot(1).jpg)           |
