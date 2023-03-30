@@ -1,7 +1,7 @@
 # Welcome to Our Codebase! 🗺
 
 
-### This is a repository for all the code and materials used to make our maps and visualizations for the class GEOG0162 Cartography and Data Visualization at University College London.
+### This is a repository for all the code and materials used to make our maps and visualizations for the class GEOG0162: Cartography and Data Visualization at University College London.
 By: Matthew Lam, Chelsea Ju, Yilin Xu, Eddie Houghton
 
 
