@@ -14,7 +14,7 @@ Here’s what we produced each week:
 
 | Theme                                                                                                                        | Visualisation                                                                             |
 |------------------------------------------------------|------------------|
-| “Using a dataset of your choice for the UK\* create a map that highlights a societal inequality.”                            | ![](images/lizzyline_dark_final.jpg)                                                      |
+| “Using a dataset of your choice for the UK create a map that highlights a societal inequality.”                            | ![](images/lizzyline_dark_final.jpg)                                                      |
 | “Create a map/graphic of COVID-19 cases or deaths that would be suitable for a government briefing to the public.”           | ![](images/map_final.jpg)                                                                 |
 | “Using data from Natural Earth create a map that reflects the core principles of visual hierarchy and design”                | ![](images/week5final.jpg)                                                                |
 | “Create a map using a dataset of your choice from the Humanitarian Data Exchange (HDX).”                                     | ![](images/finalmapweek6.jpg)                                                             |
