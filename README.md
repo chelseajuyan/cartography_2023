@@ -9,7 +9,7 @@ together. All the data we used are open-source or publicly available.
 
 Here’s what we produced each week:
 
-|                                                                                                                              |                                      |
+| Theme                                                                                                                        | Visualisation                        |
 |------------------------------------------------------|------------------|
 | “Using a dataset of your choice for the UK\* create a map that highlights a societal inequality.”                            | ![](images/lizzyline_dark_final.jpg) |
 | “Create a map/graphic of COVID-19 cases or deaths that would be suitable for a government briefing to the public.”           | ![](images/map_final.jpg)            |
